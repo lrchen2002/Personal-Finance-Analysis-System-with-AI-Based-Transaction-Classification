@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Report — Finance Analyzer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f4ef;
+      min-height: 100vh;
+      padding: 2rem;
+      color: #1a1a18;
+    }
+
+    .page { max-width: 900px; margin: 0 auto; }
+
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 2rem;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: #1a1a18; display: flex; align-items: center; justify-content: center;
+    }
+    .logo svg { width: 18px; height: 18px; fill: #fff; }
+    .header h1 { font-size: 18px; font-weight: 500; }
+    .back-link {
+      font-size: 13px; color: #888; text-decoration: none;
+      display: flex; align-items: center; gap: 4px;
+      padding: 6px 12px; border-radius: 8px;
+      border: 0.5px solid rgba(0,0,0,0.12);
+      background: #fff;
+      transition: background 0.15s;
+    }
+    .back-link:hover { background: #eee; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 600px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .metric {
+      background: #fff;
+      border: 0.5px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+    }
+    .metric-label { font-size: 12px; color: #888; margin-bottom: 0.4rem; }
+    .metric-value { font-size: 22px; font-weight: 500; }
+    .metric-value.positive { color: #0f6e56; }
+    .metric-value.negative { color: #993c1d; }
+    .metric-note { font-size: 11px; color: #aaa; margin-top: 4px; }
+
+    .advice-card {
+      background: #1a1a18;
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .advice-title {
+      font-size: 11px; color: rgba(255,255,255,0.4);
+      letter-spacing: 0.06em; text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+    .advice-item {
+      font-size: 13.5px; color: rgba(255,255,255,0.82);
+      display: flex; gap: 10px; align-items: flex-start;
+      margin-bottom: 0.5rem; line-height: 1.55;
+    }
+    .advice-item:last-child { margin-bottom: 0; }
+    .advice-dot {
+      width: 5px; height: 5px; border-radius: 50%;
+      background: rgba(255,255,255,0.3); flex-shrink: 0; margin-top: 7px;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 700px) { .charts-grid { grid-template-columns: 1fr; } }
+
+    .chart-card {
+      background: #fff;
+      border: 0.5px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 1.25rem;
+      overflow: hidden;
+    }
+    .chart-card.full { grid-column: 1 / -1; }
+    .chart-title { font-size: 12px; color: #888; margin-bottom: 1rem; }
+    .chart-card img { width: 100%; height: auto; border-radius: 6px; display: block; }
+
+    .footer { text-align: center; font-size: 12px; color: #bbb; padding: 2rem 0 1rem; }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <header class="header">
+      <div class="header-left">
+        <div class="logo">
+          <svg viewBox="0 0 24 24"><path d="M3 17l4-8 4 4 4-6 4 10H3z"/></svg>
+        </div>
+        <h1>Financial Report</h1>
+      </div>
+      <a href="/" class="back-link">&#8592; Upload again</a>
+    </header>
+
+    <div class="summary-grid">
+      <div class="metric">
+        <div class="metric-label">Total income</div>
+        <div class="metric-value">${{ summary.income }}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Total expenses</div>
+        <div class="metric-value">${{ summary.expense }}</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Net savings</div>
+        <div class="metric-value {% if summary.net | float >= 0 %}positive{% else %}negative{% endif %}">
+          ${{ summary.net }}
+        </div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Savings rate</div>
+        <div class="metric-value {% if summary.rate | float >= 20 %}positive{% else %}negative{% endif %}">
+          {{ summary.rate }}%
+        </div>
+        <div class="metric-note">Target &ge; 20%</div>
+      </div>
+    </div>
+
+    <div class="advice-card">
+      <div class="advice-title">AI Insights</div>
+      {% for line in summary.advice.split('\n') %}
+        {% set tip = line.lstrip('- ') %}
+        {% if tip %}
+        <div class="advice-item">
+          <div class="advice-dot"></div>
+          <span>{{ tip }}</span>
+        </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">Expenses by category</div>
+        <img src="/{{ bar }}" alt="Bar chart of expenses by category" />
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Expense distribution</div>
+        <img src="/{{ pie }}" alt="Pie chart of expense distribution" />
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Monthly income vs. expenses</div>
+        <img src="/{{ line }}" alt="Line chart of monthly income vs expenses" />
+      </div>
+    </div>
+
+    <div class="footer">Finance Analyzer &middot; Your data is processed locally and never stored.</div>
+  </div>
+</body>
+</html>
