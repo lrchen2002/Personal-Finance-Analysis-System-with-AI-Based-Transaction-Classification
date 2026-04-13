@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Finance Analyzer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f4ef;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      color: #1a1a18;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      border: 0.5px solid rgba(0,0,0,0.1);
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .logo {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: #1a1a18;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .logo svg { width: 22px; height: 22px; fill: #fff; }
+
+    h1 { font-size: 22px; font-weight: 500; margin-bottom: 0.4rem; }
+    .subtitle { font-size: 14px; color: #888; margin-bottom: 2rem; }
+
+    .drop-zone {
+      border: 1.5px dashed rgba(0,0,0,0.2);
+      border-radius: 12px;
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #1a1a18;
+      background: #f9f8f3;
+    }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+
+    .drop-icon {
+      width: 40px; height: 40px;
+      background: #f5f4ef;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1rem;
+    }
+    .drop-icon svg { width: 20px; height: 20px; stroke: #555; fill: none; }
+
+    .drop-label { font-size: 14px; font-weight: 500; margin-bottom: 0.3rem; }
+    .drop-hint  { font-size: 12px; color: #aaa; }
+
+    .file-chosen {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      background: #f5f4ef;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1.5rem;
+      font-size: 13px;
+    }
+    .file-chosen svg { width: 16px; height: 16px; stroke: #555; fill: none; flex-shrink: 0; }
+    .file-name { color: #333; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-remove { font-size: 12px; color: #aaa; cursor: pointer; }
+    .file-remove:hover { color: #333; }
+
+    button[type="submit"] {
+      width: 100%;
+      background: #1a1a18;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.85rem;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    button[type="submit"]:hover { opacity: 0.85; }
+    button[type="submit"]:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .formats {
+      display: flex; gap: 6px; margin-top: 1.5rem; flex-wrap: wrap;
+    }
+    .tag {
+      font-size: 11px; color: #888;
+      background: #f5f4ef;
+      border-radius: 6px; padding: 3px 8px;
+    }
+
+    .spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M3 17l4-8 4 4 4-6 4 10H3z"/></svg>
+    </div>
+    <h1>Finance Analyzer</h1>
+    <p class="subtitle">Upload your transaction history to analyze income, expenses, and savings.</p>
+
+    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+      <div class="drop-zone" id="dropZone">
+        <input type="file" name="file" id="fileInput" accept=".csv" required />
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12M8 8l4-4 4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <p class="drop-label">Click or drag a file here</p>
+        <p class="drop-hint">CSV format supported</p>
+      </div>
+
+      <div class="file-chosen" id="fileChosen">
+        <svg viewBox="0 0 24 24" stroke-width="1.5"><path d="M9 12l2 2 4-4M5 12a7 7 0 1014 0 7 7 0 00-14 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="file-name" id="fileName"></span>
+        <span class="file-remove" id="fileRemove">Remove</span>
+      </div>
+
+      <button type="submit" id="submitBtn" disabled>
+        <span id="btnText">Analyze</span>
+        <div class="spinner" id="spinner"></div>
+      </button>
+
+      <div class="formats">
+        <span class="tag">Date</span>
+        <span class="tag">Transaction Description</span>
+        <span class="tag">Type</span>
+        <span class="tag">Amount</span>
+        <span class="tag">Category</span>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    const input    = document.getElementById('fileInput');
+    const zone     = document.getElementById('dropZone');
+    const chosen   = document.getElementById('fileChosen');
+    const fileName = document.getElementById('fileName');
+    const removeBtn= document.getElementById('fileRemove');
+    const submitBtn= document.getElementById('submitBtn');
+    const spinner  = document.getElementById('spinner');
+    const btnText  = document.getElementById('btnText');
+
+    function showFile(name) {
+      fileName.textContent = name;
+      chosen.style.display = 'flex';
+      submitBtn.disabled = false;
+    }
+    function clearFile() {
+      input.value = '';
+      chosen.style.display = 'none';
+      submitBtn.disabled = true;
+    }
+
+    input.addEventListener('change', () => {
+      if (input.files[0]) showFile(input.files[0].name);
+    });
+    removeBtn.addEventListener('click', clearFile);
+
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault(); zone.classList.remove('drag-over');
+      const f = e.dataTransfer.files[0];
+      if (f) { input.files = e.dataTransfer.files; showFile(f.name); }
+    });
+
+    document.getElementById('uploadForm').addEventListener('submit', () => {
+      btnText.style.display = 'none';
+      spinner.style.display = 'block';
+      submitBtn.disabled = true;
+    });
+  </script>
+</body>
+</html>
